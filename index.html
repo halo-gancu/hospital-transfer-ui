@@ -1,0 +1,1140 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>病院情報管理システム</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.js"></script>
+<style>
+  :root{ --a4w:210mm; --a4h:297mm; --padH:8mm; --padV:12mm; --line:1px solid #111; --gray:#f5f5f5;
+        --rowh:31px; --fac-rowh:26px; --blue:#2196f3; --sel:#dbeafe; --sel-border:#60a5fa; }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{ background:#eaeaea; font-family:"Yu Gothic UI","Yu Gothic","游ゴシック体","YuGothic","Yu Gothic","游ゴシック",sans-serif;
+        font-size:10px; line-height:1.35; color:#000; }
+  body.noselect { user-select: none; -webkit-user-select: none; }
+  .nav-bar{background:#343a40;padding:10px 0;text-align:center}
+  .nav-bar button{color:#fff;background:#495057;border:none;padding:8px 16px;margin:0 5px;border-radius:4px;cursor:pointer;font-size:13px}
+  .nav-bar button:hover{background:#6c757d}.nav-bar button.active{background:#007bff}
+  .page{display:none}.page.active{display:block}
+  .control-panel{
+    width:210mm;margin:8px auto 0;display:flex;gap:10px;align-items:center;
+    font-size:12px;padding:9px;background:#fff;border-radius:6px;box-shadow:0 2px 4px rgba(0,0,0,.1);flex-wrap:wrap
+  }
+  .control-panel label{display:flex;align-items:center;gap:6px;font-weight:bold}
+  .control-panel input[type="file"]{font-size:11px}
+  .control-panel select{padding:4px 8px;border:1px solid #ccc;border-radius:3px}
+  .control-panel button{padding:6px 14px;background:#007bff;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:bold}
+  .control-panel button:hover{background:#0056b3}
+  .control-panel button:disabled{background:#6c757d;cursor:not-allowed}
+  .control-panel button.clear{background:#6c757d}.control-panel button.clear:hover{background:#5a6268}
+  .control-panel button.test{background:#28a745}.control-panel button.test:hover{background:#1e7e34}
+  #status{margin-left:auto;opacity:.85;font-size:11px;color:#666}
+  .status-error{color:#dc3545 !important;font-weight:bold}
+  .status-success{color:#28a745 !important;font-weight:bold}
+  .sheet{width:var(--a4w);min-height:var(--a4h);margin:12px auto;background:#fff;padding:var(--padV) var(--padH);
+        box-shadow:0 2px 10px rgba(0,0,0,.15);display:flex;flex-direction:column}
+  .top{margin-bottom:12px}
+  h1.title{text-align:center;font-size:17px;margin:0 0 12px;letter-spacing:.02em;font-weight:700}
+  .meta{display:grid;gap:7px 0;margin-bottom:10px;font-size:12px;font-weight:700}
+  .row1,.row2,.row3{display:grid;grid-auto-flow:column;grid-auto-columns:max-content;align-items:start}
+  .label{margin-right:12px;font-weight:700;white-space:nowrap}
+  .value{margin-right:22px;white-space:nowrap;border-bottom:1px dotted #999;min-width:78px;padding:2px 4px;min-height:18px}
+  .value.zip{margin-right:8px;min-width:78px}
+  .table-wrap{flex:1;display:flex;flex-direction:column;justify-content:flex-start}
+  .table-wrap.facilities{margin-bottom:12px;flex:none}
+  table{border-collapse:collapse;width:100%;table-layout:fixed;margin-top:7px;position:relative}
+  th,td{border:var(--line);padding:2px 6px;vertical-align:middle;color:#000}
+  thead th, tbody td{font-size:10px;font-weight:700}
+  .main-page thead th, .main-page tbody td{height:var(--rowh)}
+  .main-page thead th{background:var(--gray);border-bottom:3px double #111}
+  .facilities-page thead th, .facilities-page tbody td{height:var(--fac-rowh)}
+  .facilities-page thead th{background:var(--gray);border-bottom:2px solid #111}
+  td.center{text-align:center}
+  td,th{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  td:last-child,th:last-child{white-space:normal;word-break:break-word}
+  .editable{background:#fff;cursor:text;white-space:pre-wrap;overflow-wrap:anywhere;transition: background-color 0.15s ease}
+  .editable:hover{background:#f8f9fa}
+  .editable:focus{background:#e3f2fd;outline:2px solid var(--blue);position:relative;z-index:10}
+  td.sel{background:var(--sel) !important; outline:1px solid var(--sel-border); position:relative; z-index:5}
+  td.sel.anchor{outline:2px solid #2563eb; z-index:6}
+  td.editable:focus.sel {
+    background: var(--sel) !important;
+    outline: 2px solid var(--sel-border) !important;
+  }
+  td.editable:focus.sel.anchor {
+    outline: 2px solid #2563eb !important;
+  }
+  td[data-editing="true"] { background: #fff3cd !important; outline: 2px solid #ffc107 !important; z-index:15; }
+  td.copying { animation: copyPulse 0.6s ease-in-out; }
+  @keyframes copyPulse { 0% { background-color: var(--sel); } 50% { background-color: #90EE90; } 100% { background-color: var(--sel); } }
+  .table-controls{margin-top:10px;text-align:center;background:#f8f9fa;padding:10px;border-radius:5px}
+  .table-controls button{margin:0 5px;padding:5px 10px;font-size:11px}
+  .selection-info { position: absolute; top: -25px; right: 0; background: rgba(0,0,0,0.8); color: white;
+    padding: 2px 8px; border-radius: 4px; font-size: 10px; pointer-events: none; z-index: 100; opacity: 0; transition: opacity 0.3s ease; }
+  .selection-info.show { opacity: 1; }
+  .section{margin-bottom:20px}
+  .section-title{font-size:14px;font-weight:700;margin-bottom:8px;color:#333}
+  
+  .mobile-warning {
+    background: #fff3cd;
+    color: #856404;
+    padding: 12px;
+    text-align: center;
+    font-size: 14px;
+    border-bottom: 2px solid #ffc107;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    display: none;
+  }
+  
+  @media (max-width: 767px) {
+    .control-panel, .sheet {
+      transform: scale(0.45);
+      transform-origin: top left;
+      margin-left: 0;
+    }
+    body {
+      overflow-x: auto;
+    }
+    .mobile-warning {
+      display: block;
+    }
+  }
+
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .control-panel, .sheet {
+      transform: scale(0.85);
+      transform-origin: top center;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .control-panel, .sheet {
+      transform: scale(1);
+    }
+  }
+
+  @media (hover: none) and (pointer: coarse) {
+    .editable:hover {
+      background: #fff;
+    }
+    * {
+      -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+    }
+    td.editable {
+      min-height: 36px;
+    }
+  }
+  
+  @media print{
+    @page{size:A4 portrait;margin:0}
+    html,body{background:#fff}
+    body { margin:0 !important; } 
+    .nav-bar,.control-panel,.table-controls,.excel-help,.mobile-warning{display:none}
+    .sheet{box-shadow:none;margin:0;width:210mm;height:297mm;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+</style>
+</head>
+<body>
+
+<div class="mobile-warning" id="mobile-warning">
+  📱 PC/タブレットでの使用を推奨します。スマホでは閲覧・基本編集のみ可能です。
+</div>
+
+<div class="nav-bar">
+  <button id="tab-main" class="active" onclick="showPage('main')">病院情報リスト</button>
+  <button id="tab-facilities" onclick="showPage('facilities')">関連施設・業者情報</button>
+</div>
+
+<div id="page-main" class="page main-page active">
+  <div class="control-panel">
+    <label> CSV:<input id="mdataFile" type="file" accept=".csv"></label>
+    <label> 都道府県:
+      <select id="prefSelect"><option value="">選択</option></select>
+    </label>
+    <label> 病院（コード）:
+      <select id="codeSelect" disabled><option value="">選択</option></select>
+    </label>
+    <button id="testBtn" class="test" onclick="testConnection()">接続テスト</button>
+    <button id="fillBtn" disabled onclick="fillFromServer()">転記</button>
+    <button id="saveBtn" disabled onclick="saveToServer()">保存</button>
+    <button id="clearBtn" class="clear" onclick="clearForm()">クリア</button>
+    <span id="status">CSV を読み込んでから転記してください。</span>
+  </div>
+
+  <div class="sheet">
+    <div class="top">
+      <h1 class="title">病院情報リスト</h1>
+      <div class="meta">
+        <div class="row1">
+          <div class="label">コード</div><div class="value editable" contenteditable="plaintext-only" id="v-code">—</div>
+          <div class="label">都道府県</div><div class="value editable" contenteditable="plaintext-only" id="v-pref">—</div>
+          <div class="label">病院名</div><div class="value editable" contenteditable="plaintext-only" id="v-hospital">—</div>
+        </div>
+        <div class="row2">
+          <div class="label">〒住所</div><div class="value zip editable" contenteditable="plaintext-only" id="v-zip">—</div>
+          <div class="value editable" contenteditable="plaintext-only" id="v-addr">—</div>
+          <div class="label">最寄駅</div><div class="value editable" contenteditable="plaintext-only" id="v-station">—</div>
+        </div>
+        <div class="row3">
+          <div class="label">TEL / DI</div><div class="value editable" contenteditable="plaintext-only" id="v-teldi">—</div>
+          <div class="label">ファミレス</div><div class="value editable" contenteditable="plaintext-only" id="v-family">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <div style="position: relative;">
+        <div class="selection-info" id="selection-info"></div>
+        <table class="selectable-table" id="main-table">
+          <colgroup><col style="width:50px;"><col style="width:50px;"><col style="width:110px;"><col style="width:60px;"><col style="width:60px;"><col style="width:85px;"><col style="width:50px;"><col style="width:50px;"><col></colgroup>
+          <thead><tr><th>印</th><th>卒業</th><th>Dr. ／ 出身大学</th><th>診療科</th><th>PHS</th><th>直PHS</th><th>①</th><th>②</th><th>備考</th></tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="table-controls">
+        <div>
+          <button onclick="addTableRows('main', 1)">+1行</button>
+          <button onclick="addTableRows('main', 5)">+5行</button>
+          <button onclick="addTableRows('main', 10)">+10行</button>
+          <span style="display:inline-block;width:16px"></span>
+          <button onclick="removeTableRows('main', 1)">-1行</button>
+          <button onclick="removeTableRows('main', 5)">-5行</button>
+        </div>
+        <div style="font-size: 12px; color: #666; margin-top:8px;">現在: <span id="main-row-count" style="font-weight: bold; color: #007bff;">0</span>行</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="page-facilities" class="page facilities-page">
+  <div class="control-panel">
+    <span style="font-weight:bold;">関連施設・業者情報</span>
+    <button id="fillBtn2" disabled onclick="fillFromServer()">転記</button>
+    <button id="saveBtn2" disabled onclick="saveToServer()">保存</button>
+    <span id="status2">1ページ目で転記すると、こちらにも自動反映されます。</span>
+  </div>
+
+  <div class="sheet">
+    <div class="top">
+      <h1 class="title">関連施設・業者情報</h1>
+      <div class="meta">
+        <div class="row1"><div class="label">コード</div><div class="value editable" contenteditable="plaintext-only" id="v2-code">—</div><div class="label">病院名</div><div class="value editable" contenteditable="plaintext-only" id="v2-hospital">—</div></div>
+        <div class="row2"><div class="label">TEL</div><div class="value editable" contenteditable="plaintext-only" id="v2-tel">—</div><div class="label">DI</div><div class="value editable" contenteditable="plaintext-only" id="v2-di">—</div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">関連病院施設情報</div>
+      <div class="table-wrap facilities">
+        <div style="position: relative;">
+          <div class="selection-info" id="selection-info-facilities"></div>
+          <table class="selectable-table" id="facilities-table">
+            <colgroup><col style="width:150px;"><col style="width:120px;"><col></colgroup>
+            <thead><tr><th>関連病院施設等</th><th>関連病院TEL</th><th>関連病院備考</th></tr></thead>
+            <tbody id="facilities-tbody"></tbody>
+          </table>
+        </div>
+        <div class="table-controls">
+          <div>
+            <button onclick="addTableRows('facilities', 1)">+1行</button>
+            <button onclick="addTableRows('facilities', 5)">+5行</button>
+            <span style="display:inline-block;width:16px"></span>
+            <button onclick="removeTableRows('facilities', 1)">-1行</button>
+            <button onclick="removeTableRows('facilities', 5)">-5行</button>
+          </div>
+          <div style="font-size: 12px; color: #666; margin-top:8px;">現在: <span id="facilities-row-count" style="font-weight: bold; color: #007bff;">0</span>行</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">業者・部署情報</div>
+      <div class="table-wrap facilities">
+        <div style="position: relative;">
+          <div class="selection-info" id="selection-info-vendors"></div>
+          <table class="selectable-table" id="vendors-table">
+            <colgroup><col style="width:100px;"><col style="width:120px;"><col style="width:80px;"><col></colgroup>
+            <thead><tr><th>部署</th><th>業者</th><th>内線</th><th>TEL・メモ</th></tr></thead>
+            <tbody id="vendors-tbody"></tbody>
+          </table>
+        </div>
+        <div class="table-controls">
+          <div>
+            <button onclick="addTableRows('vendors', 1)">+1行</button>
+            <button onclick="addTableRows('vendors', 5)">+5行</button>
+            <span style="display:inline-block;width:16px"></span>
+            <button onclick="removeTableRows('vendors', 1)">-1行</button>
+            <button onclick="removeTableRows('vendors', 5)">-5行</button>
+          </div>
+          <div style="font-size: 12px; color: #666; margin-top:8px;">現在: <span id="vendors-row-count" style="font-weight: bold; color: #007bff;">0</span>行</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== 基本設定 ===== */
+const API = location.origin;
+let currentData = null, currentUserId = null, autoSaveTimer = null;
+let selRect = null, anchor = null, isDown = false, isDrag = false, editingCell = null;
+let isLoadingData = false;
+
+/* ▼ 排他ロック用 追加変数 */
+let socket = null;
+let currentLockCode = null;
+let currentLocks = {};
+let currentUsername = null;
+let LOCK_AVAILABLE = false;
+
+/* ===== UI共通関数 ===== */
+function showPage(type) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-bar button').forEach(b => b.classList.remove('active'));
+  document.getElementById(`page-${type}`).classList.add('active');
+  document.getElementById(`tab-${type}`).classList.add('active');
+}
+
+function setStatus(msg, type = 'normal', id = 'status') {
+  const s = document.getElementById(id); if (!s) return;
+  s.textContent = msg;
+  s.className = (type === 'error' ? 'status-error' : (type === 'success' ? 'status-success' : ''));
+  
+  if (id === 'status') {
+    const s2 = document.getElementById('status2');
+    if (s2) {
+      s2.textContent = msg;
+      s2.className = s.className;
+    }
+  }
+}
+
+function setButtons(on) {
+  ['fillBtn', 'saveBtn', 'saveBtn2', 'fillBtn2'].forEach(id => {
+    const btn = document.getElementById(id); if(btn) btn.disabled = !on;
+  });
+}
+
+/* ====== ユーティリティ ====== */
+async function safeJSON(resp) {
+  try {
+    const ct = resp.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) return { ok: false, _nonjson: true, text: await resp.text() };
+    return await resp.json();
+  } catch (e) {
+    return { ok: false, _parseError: String(e) };
+  }
+}
+
+/* ====== 排他ロックAPI ====== */
+async function detectLockAPI() {
+  LOCK_AVAILABLE = false;
+  console.log('Lock API disabled for development');
+}
+
+let heartbeatInterval = null;
+
+function startHeartbeat() {
+  if (!LOCK_AVAILABLE || !currentLockCode) return;
+  heartbeatInterval = setInterval(async () => {
+    if (currentLockCode) {
+      try {
+        await fetch(`${API}/api/lock/heartbeat`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ 
+            code: currentLockCode, 
+            user_id: currentUserId,
+            timestamp: Date.now()
+          })
+        });
+      } catch (e) {
+        console.warn('Heartbeat failed:', e);
+      }
+    }
+  }, 30000);
+}
+
+function stopHeartbeat() {
+  if (heartbeatInterval) {
+    clearInterval(heartbeatInterval);
+    heartbeatInterval = null;
+  }
+}
+
+async function forceUnlockCode(code) {
+  if (!LOCK_AVAILABLE) return true;
+  const confirmed = confirm('このレコードは他のユーザーが編集中です。強制的に解除して編集を開始しますか？');
+  if (!confirmed) return false;
+  try {
+    const r = await fetch(`${API}/api/lock/force_release`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ 
+        code: code,
+        user_id: currentUserId,
+        username: currentUsername,
+        reason: 'force_unlock'
+      })
+    });
+    const j = await safeJSON(r);
+    if (r.ok && j.ok) {
+      setStatus('ロックを強制解除しました', 'success');
+      await fetchLocks();
+      decorateCodeSelect();
+      return true;
+    }
+  } catch (e) {
+    console.warn('Force unlock failed:', e);
+  }
+  setStatus('ロック解除に失敗しました', 'error');
+  return false;
+}
+
+function decorateCodeSelect() {
+  const codeSel = document.getElementById('codeSelect');
+  if (!codeSel) return;
+  const selected = codeSel.value;
+  [...codeSel.options].forEach(opt => {
+    if (!opt.value) return;
+    const baseText = opt.getAttribute('data-base-text') || opt.textContent;
+    opt.setAttribute('data-base-text', baseText);
+    if (LOCK_AVAILABLE) {
+      const lock = currentLocks[opt.value];
+      if (lock && lock.user_id && lock.user_id !== currentUserId) {
+        const lockTime = lock.locked_at ? new Date(lock.locked_at) : null;
+        const timeInfo = lockTime ? ` (${formatLockTime(lockTime)})` : '';
+        opt.textContent = `${baseText} 🔒 ${lock.username || lock.user_id}${timeInfo}`;
+        opt.disabled = false;
+        opt.style.color = '#dc3545';
+        opt.style.fontStyle = 'italic';
+      } else {
+        opt.textContent = baseText;
+        opt.disabled = false;
+        opt.style.color = '';
+        opt.style.fontStyle = '';
+      }
+    } else {
+      opt.textContent = baseText;
+      opt.disabled = false;
+      opt.style.color = '';
+      opt.style.fontStyle = '';
+    }
+  });
+  if (currentLockCode) {
+    const opt = [...codeSel.options].find(o => o.value === currentLockCode);
+    if (opt) {
+      opt.disabled = false;
+      opt.style.color = '#28a745';
+      opt.style.fontWeight = 'bold';
+    }
+  }
+  codeSel.value = selected;
+}
+
+function formatLockTime(lockTime) {
+  const now = new Date();
+  const diff = Math.floor((now - lockTime) / 1000 / 60);
+  if (diff < 1) return '今';
+  if (diff < 60) return `${diff}分前`;
+  const hours = Math.floor(diff / 60);
+  if (hours < 24) return `${hours}時間前`;
+  const days = Math.floor(hours / 24);
+  return `${days}日前`;
+}
+
+async function fetchLocks() {
+  if (!LOCK_AVAILABLE) return;
+  try {
+    const r = await fetch(`${API}/api/lock/status`);
+    const j = await safeJSON(r);
+    if (r.ok && j.ok && j.locks) currentLocks = j.locks;
+  } catch (e) { console.warn('ロック一覧の取得に失敗:', e); }
+}
+
+async function acquireLock(code) {
+  if (!LOCK_AVAILABLE) return true;
+  const existingLock = currentLocks[code];
+  if (existingLock && existingLock.user_id !== currentUserId) {
+    const success = await forceUnlockCode(code);
+    if (!success) return false;
+  }
+  try {
+    const r = await fetch(`${API}/api/lock/acquire`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ code, user_id: currentUserId, username: currentUsername })
+    });
+    const j = await safeJSON(r);
+    if (r.ok && j.ok) {
+      currentLockCode = code;
+      currentLocks[code] = { user_id: currentUserId, username: currentUsername };
+      decorateCodeSelect();
+      startHeartbeat();
+      return true;
+    }
+    if (j._nonjson || j._parseError) {
+      LOCK_AVAILABLE = false; currentLockCode = null; currentLocks = {}; decorateCodeSelect();
+      setStatus('ロックAPIが無効のためロック無しで続行します。', 'success');
+      return true;
+    }
+    const success = await forceUnlockCode(code);
+    return success;
+  } catch (e) {
+    LOCK_AVAILABLE = false; currentLockCode = null; currentLocks = {}; decorateCodeSelect();
+    setStatus('ロックAPIに接続できないためロック無しで続行します。', 'success');
+    return true;
+  }
+}
+
+async function releaseLock(code) {
+  if (!code) return;
+  stopHeartbeat();
+  if (!LOCK_AVAILABLE) { currentLockCode = null; return; }
+  try {
+    const payload = JSON.stringify({ code, user_id: currentUserId });
+    if (document.visibilityState === 'hidden') {
+      const blob = new Blob([payload], {type: 'application/json'});
+      navigator.sendBeacon?.(`${API}/api/lock/release`, blob);
+    } else {
+      await fetch(`${API}/api/lock/release`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: payload });
+    }
+  } catch (e) {
+    console.warn('ロック解除エラー:', e);
+  } finally {
+    if (currentLocks[code] && currentLocks[code].user_id === currentUserId) delete currentLocks[code];
+    if (currentLockCode === code) currentLockCode = null;
+    decorateCodeSelect();
+  }
+}
+
+/* ===== サーバー接続テスト ===== */
+async function testConnection() {
+  setStatus('サーバー接続をテスト中...');
+  try {
+    const response = await fetch(`${API}/api/health`);
+    const data = await safeJSON(response);
+    if (response.ok && data.ok) setStatus('サーバー接続成功！', 'success');
+    else throw new Error('Server data not OK');
+  } catch (error) { setStatus('サーバーに接続できません', 'error'); }
+}
+
+/* ===== メタ情報フィールドの同期機能 ===== */
+function syncMetaFields() {
+  const syncPairs = [
+    ['v-code', 'v2-code'],
+    ['v-hospital', 'v2-hospital']
+  ];
+  const teldi = document.getElementById('v-teldi').textContent || "";
+  const parts = teldi.split(/[／/]/);
+  const tel = (parts[0] || "").trim();
+  const di = (parts[1] || "").trim();
+  document.getElementById('v2-tel').textContent = tel || "—";
+  document.getElementById('v2-di').textContent = di || "—";
+  syncPairs.forEach(([source, target]) => {
+    const sourceEl = document.getElementById(source);
+    const targetEl = document.getElementById(target);
+    if (sourceEl && targetEl) {
+      targetEl.textContent = sourceEl.textContent;
+    }
+  });
+}
+
+/* ===== テーブルセルの自動保存設定（無効化） ===== */
+function initTableCellsAutoSave() {
+  // 自動保存機能を完全に無効化
+  // イベントリスナーは設定しない
+}
+
+/* ===== メタ情報フィールドの自動保存設定（無効化） ===== */
+function initMetaFieldsAutoSave() {
+  const metaFieldIds = [
+    'v-code', 'v-pref', 'v-hospital', 'v-zip', 'v-addr', 'v-station', 'v-teldi', 'v-family',
+    'v2-code', 'v2-hospital', 'v2-tel', 'v2-di'
+  ];
+  metaFieldIds.forEach(id => {
+    const field = document.getElementById(id);
+    if (field) {
+      field.addEventListener('blur', () => {
+        syncMetaFields();
+      });
+      field.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          syncMetaFields();
+          field.blur();
+        }
+      });
+    }
+  });
+}
+
+/* ===== Excel風機能（選択・編集 etc） ===== */
+function updateSelectionInfo(table, rect) {
+  const tableId = table.id;
+  let infoId = 'selection-info';
+  if (tableId.includes('facilities')) infoId = 'selection-info-facilities';
+  else if (tableId.includes('vendors')) infoId = 'selection-info-vendors';
+  const info = document.getElementById(infoId); if (!info) return;
+  if (rect && (rect.r1 !== rect.r2 || rect.c1 !== rect.c2)) {
+    const rows = rect.r2 - rect.r1 + 1, cols = rect.c2 - rect.c1 + 1;
+    info.textContent = `${rows}行 × ${cols}列`; info.classList.add('show');
+  } else { info.classList.remove('show'); }
+}
+
+function placeCaret(td, atEnd = false) {
+  td.focus(); const sel = window.getSelection();
+  if (sel.rangeCount > 0) sel.removeAllRanges();
+  const range = document.createRange();
+  range.selectNodeContents(td); range.collapse(atEnd); sel.addRange(range);
+}
+
+function clearAllSelections() {
+  document.querySelectorAll('td.sel').forEach(td => td.classList.remove('sel', 'anchor'));
+  document.querySelectorAll('.selection-info').forEach(el => el.classList.remove('show'));
+  if (!editingCell) {
+    document.querySelectorAll('td.editable').forEach(td => {
+      if (td === document.activeElement && !isEditing(td)) {
+        td.blur();
+      }
+    });
+  }
+  selRect = null; 
+  anchor = null;
+}
+
+function applyRectSelection(table, r1, c1, r2, c2) {
+  document.querySelectorAll('td.sel').forEach(td => td.classList.remove('sel', 'anchor'));
+  document.querySelectorAll('.selection-info').forEach(el => el.classList.remove('show'));
+  const rr1 = Math.min(r1, r2), rr2 = Math.max(r1, r2);
+  const cc1 = Math.min(c1, c2), cc2 = Math.max(c1, c2);
+  for (let r = rr1; r <= rr2; r++) {
+    for (let c = cc1; c <= cc2; c++) {
+      const td = table.querySelector(`td[data-r="${r}"][data-c="${c}"]`);
+      if (td) td.classList.add('sel');
+    }
+  }
+  const anchorCell = table.querySelector(`td[data-r="${r1}"][data-c="${c1}"]`);
+  if (anchorCell) {
+    anchorCell.classList.add('anchor');
+    if (!isEditing(anchorCell)) {
+      anchorCell.focus();
+    }
+  }
+  selRect = { table, r1: rr1, c1: cc1, r2: rr2, c2: cc2 };
+  updateSelectionInfo(table, selRect);
+}
+
+function isEditing(td) { return td && td.getAttribute('data-editing') === 'true'; }
+
+function enterEdit(td, options = {}) {
+  const { clearContent = false, placeCaretAtEnd = false } = options;
+  if (editingCell && editingCell !== td) exitEdit();
+  if (isEditing(td)) return;
+  editingCell = td;
+  if (clearContent) td.textContent = '';
+  td.setAttribute('data-editing', 'true'); td.focus();
+  if (placeCaretAtEnd) placeCaret(td, true);
+}
+
+function exitEdit() {
+  if (editingCell) { 
+    editingCell.blur(); 
+    editingCell.removeAttribute('data-editing'); 
+    editingCell = null;
+  }
+}
+
+function moveFocusCell(table, r, c, startEdit = false) {
+  const td = table.querySelector(`td[data-r="${r}"][data-c="${c}"]`); 
+  if (!td) return;
+  exitEdit(); 
+  applyRectSelection(table, r, c, r, c);
+  anchor = { table, r, c }; 
+  if (startEdit) enterEdit(td);
+}
+
+function selectAll(table) {
+  const tbody = table.tBodies[0]; 
+  if (!tbody || !tbody.rows.length) return;
+  const maxR = tbody.rows.length - 1, maxC = table.tHead.rows[0].cells.length - 1;
+  applyRectSelection(table, 0, 0, maxR, maxC); 
+  exitEdit();
+}
+
+function rectToTSV(rect) {
+  if (!rect) return ''; const { table, r1, c1, r2, c2 } = rect; const out = [];
+  for (let r = r1; r <= r2; r++) {
+    const row = [];
+    for (let c = c1; c <= c2; c++) {
+      const td = table.querySelector(`td[data-r="${r}"][data-c="${c}"]`); row.push(td ? td.innerText : '');
+    } out.push(row.join('\t'));
+  } return out.join('\n');
+}
+
+function fillRange(rect, valueFn) {
+  if (!rect) return; const { table, r1, c1, r2, c2 } = rect;
+  for (let r = r1; r <= r2; r++) for (let c = c1; c <= c2; c++) {
+    const td = table.querySelector(`td[data-r="${r}"][data-c="${c}"]`); if (td) td.textContent = valueFn(r, c);
+  }
+}
+
+function pasteTSVIntoRect(table, startR, startC, text) {
+  const rows = (text || '').replace(/\r/g, '').split('\n').map(r => r.split('\t'));
+  const h = rows.length; if (h === 0) return; const w = rows[0].length;
+  const requiredRows = startR + h, currentRows = table.tBodies[0].rows.length;
+  if (requiredRows > currentRows) {
+    const type = table.id.split('-')[0], cols = table.tHead.rows[0].cells.length;
+    buildRows(table.tBodies[0], requiredRows - currentRows, cols, type); updateRowCountBadges();
+  }
+  for (let i = 0; i < h; i++) for (let j = 0; j < w; j++) {
+    const r = startR + i, c = startC + j;
+    const td = table.querySelector(`td[data-r="${r}"][data-c="${c}"]`);
+    if (td) td.textContent = (rows[i] && rows[i][j] !== undefined) ? rows[i][j] : '';
+  }
+  const maxR = table.tBodies[0].rows.length - 1, maxC = table.tHead.rows[0].cells.length - 1;
+  applyRectSelection(table, startR, startC, Math.min(maxR, startR + h - 1), Math.min(maxC, startC + w - 1));
+}
+
+function showCopyEffect(rect) {
+  if (!rect) return; const { table, r1, c1, r2, c2 } = rect;
+  for (let r = r1; r <= r2; r++) for (let c = c1; c <= c2; c++) {
+    const td = table.querySelector(`td[data-r="${r}"][data-c="${c}"]`);
+    if (td) { td.classList.add('copying'); setTimeout(() => td.classList.remove('copying'), 600); }
+  }
+}
+
+function scheduleAutoSave() {
+  // 自動保存を完全に無効化 - 手動保存のみ
+  return;
+}
+
+function initExcelLikeSelection() {
+  document.querySelectorAll('table.selectable-table').forEach(table => {
+    table.addEventListener('mousedown', e => {
+      document.body.classList.add('noselect');
+      const td = e.target.closest('td.editable'); if (!td) return;
+      if (isEditing(td)) return;
+      e.preventDefault(); exitEdit(); isDown = true; isDrag = false;
+      const r = +td.dataset.r, c = +td.dataset.c;
+      if (e.shiftKey && anchor && anchor.table === table) { 
+        applyRectSelection(table, anchor.r, anchor.c, r, c); 
+      } else { 
+        applyRectSelection(table, r, c, r, c); 
+        anchor = { table, r, c }; 
+      }
+    });
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!isDown || !anchor) return;
+    const targetTd = e.target.closest('td.editable');
+    if (isEditing(targetTd) || !targetTd || targetTd.closest('table') !== anchor.table) return;
+    isDrag = true;
+    applyRectSelection(anchor.table, anchor.r, anchor.c, +targetTd.dataset.r, +targetTd.dataset.c);
+  });
+
+  document.addEventListener('mouseup', () => {
+    document.body.classList.remove('noselect');
+    if (isDown && !isDrag && anchor) {
+      const td = anchor.table.querySelector(`td[data-r="${anchor.r}"][data-c="${anchor.c}"]`);
+      if(td && !isEditing(td)) td.focus();
+    }
+    isDown = false; isDrag = false;
+  });
+
+  document.addEventListener('dblclick', e => { 
+    const td = e.target.closest('td.editable'); 
+    if (td) enterEdit(td); 
+  });
+
+  document.addEventListener('keydown', e => {
+    const activeTd = document.activeElement.closest('td.editable'); if (!activeTd) return;
+    const table = activeTd.closest('table.selectable-table');
+    const r = +activeTd.dataset.r, c = +activeTd.dataset.c;
+    const maxR = table.tBodies[0].rows.length - 1, maxC = table.tHead.rows[0].cells.length - 1;
+    const editing = isEditing(activeTd);
+    if (e.ctrlKey || e.metaKey) { if (e.key.toLowerCase() === 'a') { e.preventDefault(); selectAll(table); } return; }
+    switch (e.key) {
+      case 'Enter':
+        e.preventDefault();
+        if (editing && e.altKey) { document.execCommand('insertLineBreak'); return; }
+        const nr_enter = e.shiftKey ? Math.max(0, r - 1) : Math.min(maxR, r + 1);
+        moveFocusCell(table, nr_enter, c, editing); break;
+      case 'Tab':
+        e.preventDefault(); let nr_tab = r, nc_tab = c;
+        if (e.shiftKey) { if (c > 0) nc_tab--; else { nc_tab = maxC; nr_tab = Math.max(0, r - 1); } } 
+        else { if (c < maxC) nc_tab++; else { nc_tab = 0; nr_tab = Math.min(maxR, r + 1); } }
+        moveFocusCell(table, nr_tab, nc_tab, editing); break;
+      case 'ArrowUp': case 'ArrowDown': case 'ArrowLeft': case 'ArrowRight':
+        if (editing) return; e.preventDefault(); let nr_arrow = r, nc_arrow = c;
+        if (e.key === 'ArrowUp') nr_arrow = Math.max(0, r - 1); if (e.key === 'ArrowDown') nr_arrow = Math.min(maxR, r + 1);
+        if (e.key === 'ArrowLeft') nc_arrow = Math.max(0, c - 1); if (e.key === 'ArrowRight') nc_arrow = Math.min(maxC, c + 1);
+        if (e.shiftKey) {
+          if (!anchor) anchor = { table, r, c };
+          applyRectSelection(table, anchor.r, anchor.c, nr_arrow, nc_arrow);
+          table.querySelector(`td[data-r="${nr_arrow}"][data-c="${nc_arrow}"]`)?.focus();
+        } else { moveFocusCell(table, nr_arrow, nc_arrow); } break;
+      case 'F2': e.preventDefault(); if (!editing) enterEdit(activeTd, { placeCaretAtEnd: true }); break;
+      case 'Escape': e.preventDefault(); if (editing) { exitEdit(); activeTd.focus(); } else { clearAllSelections(); } break;
+      case 'Delete': case 'Backspace': if (!editing) { e.preventDefault(); fillRange(selRect, () => ''); } break;
+      default: if (!editing && e.key.length === 1 && !e.altKey) { enterEdit(activeTd, { clearContent: true }); } break;
+    }
+  });
+
+  document.addEventListener('paste', e => {
+    if (isEditing(document.activeElement)) return;
+    const activeTd = document.activeElement.closest('td.editable'); if (!activeTd) return; e.preventDefault();
+    const pastedText = e.clipboardData.getData('text/plain') || '', table = activeTd.closest('table.selectable-table');
+    const r = selRect ? selRect.r1 : +activeTd.dataset.r, c = selRect ? selRect.c1 : +activeTd.dataset.c;
+    if (/\t|\n/.test(pastedText)) { pasteTSVIntoRect(table, r, c, pastedText); } 
+    else { if (selRect) { fillRange(selRect, () => pastedText); } else { activeTd.textContent = pastedText; } }
+  });
+
+  document.addEventListener('copy', e => {
+    if (isEditing(document.activeElement)) return;
+    const activeTd = document.activeElement.closest('td.editable'); if (!activeTd || !selRect) return;
+    e.preventDefault(); e.clipboardData.setData('text/plain', rectToTSV(selRect)); showCopyEffect(selRect);
+  });
+
+  document.addEventListener('cut', e => {
+    if (isEditing(document.activeElement)) return;
+    const activeTd = document.activeElement.closest('td.editable'); if (!activeTd || !selRect) return;
+    e.preventDefault(); e.clipboardData.setData('text/plain', rectToTSV(selRect));
+    showCopyEffect(selRect); fillRange(selRect, () => '');
+  });
+}
+
+/* ===== テーブル構築とデータ処理 ===== */
+function buildRows(tbody, rows, cols, idPrefix) {
+  const existingRows = tbody.children.length;
+  for(let i=0; i<rows; i++){
+    const tr=document.createElement('tr'); let h=''; const rowIndex = existingRows + i;
+    for(let j=0; j<cols; j++){
+      const center=(idPrefix==='main'&&(j===0||j===1||j===6||j===7))?'center':'';
+      h+=`<td class="editable ${center}" contenteditable="plaintext-only" data-r="${rowIndex}" data-c="${j}"></td>`;
+    } tr.innerHTML=h; tbody.appendChild(tr);
+  }
+}
+
+function addTableRows(type, count = 1) {
+  let tbody, cols, maxRows, idPrefix;
+  if (type === 'main') { tbody=document.getElementById('tbody'); cols=9; maxRows=200; idPrefix='main';}
+  else if (type === 'facilities') { tbody=document.getElementById('facilities-tbody'); cols=3; maxRows=100; idPrefix='facilities';}
+  else { tbody=document.getElementById('vendors-tbody'); cols=4; maxRows=200; idPrefix='vendors';}
+  const cur=tbody.children.length;
+  if (cur+count > maxRows && !confirm(`最大推奨行数${maxRows}を超えます。続行しますか？`)) return;
+  buildRows(tbody, count, cols, idPrefix); updateRowCountBadges();
+  setStatus(`${type}テーブルに${count}行追加しました`, 'success');
+}
+
+function removeTableRows(type, count = 1) {
+  const tbody = document.getElementById(type === 'main' ? 'tbody' : `${type}-tbody`);
+  const cur = tbody.children.length; if (!cur) return; const rm = Math.min(count, cur);
+  for (let i = 0; i < rm; i++) tbody.removeChild(tbody.lastElementChild);
+  updateRowCountBadges(); setStatus(`${type}テーブルから${rm}行削除しました`, 'success');
+}
+
+function updateRowCountBadges() {
+  const m=document.getElementById('main-row-count'); if(m) m.textContent=document.getElementById('tbody').children.length;
+  const f=document.getElementById('facilities-row-count'); if(f) f.textContent=document.getElementById('facilities-tbody').children.length;
+  const v=document.getElementById('vendors-row-count'); if(v) v.textContent=document.getElementById('vendors-tbody').children.length;
+}
+
+const seriesKey = (b, i) => `${b}_${i}`;
+const readSeries = (kv, b, i) => kv[seriesKey(b, i)] ?? "";
+const writeSeries = (p, b, i, v) => p[seriesKey(b, i)] = v;
+
+function getRowCountFromData(kv, keys) {
+  let maxRow = 0;
+  for (const key in kv) {
+    const parts = key.split('_');
+    if (parts.length === 2 && keys.includes(parts[0])) {
+      const rowNum = parseInt(parts[1], 10);
+      const value = kv[key];
+      if (!isNaN(rowNum) && value && value.trim() !== '') {
+        if (rowNum > maxRow) {
+          maxRow = rowNum;
+        }
+      }
+    }
+  }
+  console.log(`getRowCountFromData: キー=${keys.join(',')}, 実データ行=${maxRow}`);
+  return maxRow;
+}
+
+const DEFAULT_ROWS = {
+  main: 26,
+  facilities: 20,
+  vendors: 30
+};
+
+function setMeta(kv) {
+  const g=id=>document.getElementById(id);
+  g('v-code').textContent=kv['コード']||"—"; 
+  g('v-pref').textContent=kv['都道府県']||"—"; 
+  g('v-hospital').textContent=kv['病院名']||"—";
+  g('v-zip').textContent=kv['郵便番号']||"—"; 
+  g('v-addr').textContent=kv['住所']||"—"; 
+  g('v-station').textContent=kv['最寄駅']||"—";
+  const tel=kv['TEL']||"", di=kv['DI']||"";
+  g('v-teldi').textContent=(tel&&di)?`${tel}／${di}`:(tel||di||"—"); 
+  g('v-family').textContent=kv['ファミレス']||"—";
+  g('v2-code').textContent=kv['コード']||"—"; 
+  g('v2-hospital').textContent=kv['病院名']||"—";
+  g('v2-tel').textContent=tel||"—"; 
+  g('v2-di').textContent=di||"—";
+}
+
+function setTableData(tbody, kv, cols, keys, minRows, idPrefix) {
+  const dataRows = getRowCountFromData(kv, keys);
+  const displayRows = Math.max(dataRows, minRows);
+  console.log(`${idPrefix}テーブル: データ${dataRows}行, 最小${minRows}行, 表示${displayRows}行`);
+  tbody.innerHTML = ''; 
+  buildRows(tbody, displayRows, cols, idPrefix);
+  const cells = tbody.querySelectorAll('.editable[contenteditable]');
+  for (let i = 0; i < displayRows; i++) {
+    const n = i + 1;
+    for (let j = 0; j < cols; j++) {
+      const cell = cells[i * cols + j];
+      if (cell) {
+        const value = i < dataRows ? readSeries(kv, keys[j], n) : '';
+        cell.textContent = value || '';
+      }
+    }
+  } 
+  updateRowCountBadges();
+}
+
+/* ===== サーバー通信（データ本体） ===== */
+async function fillFromServer() {
+  const codeSel = document.getElementById('codeSelect');
+  const code = (codeSel.value || '').trim();
+  if (!code) { setStatus('コードを選択してください', 'error'); return; }
+
+  if (currentLockCode && currentLockCode !== code) await releaseLock(currentLockCode);
+
+  const ok = await acquireLock(code);
+  if (!ok) { decorateCodeSelect(); return; }
+
+  isLoadingData = true;
+  setStatus('データ取得中...');
+  try {
+    const r = await fetch(`${API}/api/mdata/${encodeURIComponent(code)}`);
+    const j = await safeJSON(r);
+    if (!r.ok || !j.ok) { 
+      isLoadingData = false;
+      setStatus('データが見つかりません', 'error'); 
+      return; 
+    }
+    currentData = { code: j.code, kv: j.kv || {} };
+    const kv = currentData.kv;
+    setMeta(kv);
+
+    setTableData(document.getElementById('tbody'), kv, 9, ['印', '卒業', 'Dr./出身大学', '診療科', 'PHS', '直PHS', '①', '②', '備考'], DEFAULT_ROWS.main, 'main');
+    setTableData(document.getElementById('facilities-tbody'), kv, 3, ['関連病院施設等', '関連病院TEL', '関連病院備考'], DEFAULT_ROWS.facilities, 'facilities');
+    setTableData(document.getElementById('vendors-tbody'), kv, 4, ['部署', '業者', '内線', 'TEL・メモ'], DEFAULT_ROWS.vendors, 'vendors');
+
+    setStatus(LOCK_AVAILABLE ? '転記完了（ロック中）' : '転記完了（ロック無し）', 'success'); 
+    setButtons(true);
+    
+    isLoadingData = false;
+  } catch (e) { 
+    isLoadingData = false;
+    setStatus('転記中にエラー: ' + e.message, 'error'); 
+  }
+}
+
+function collectForSave() {
+  if (!currentData || !currentData.code) return null;
+  const p={}, g=id=>document.getElementById(id).textContent||"";
+  p["コード"]=g('v-code'); 
+  p["都道府県"]=g('v-pref'); 
+  p["病院名"]=g('v-hospital'); 
+  p["郵便番号"]=g('v-zip');
+  p["住所"]=g('v-addr'); 
+  p["最寄駅"]=g('v-station'); 
+  const teldi=g('v-teldi');
+  if (teldi && teldi !== "—") {
+    const sp=teldi.split(/[／/]/);
+    p["TEL"]=(sp[0]||"").trim(); 
+    p["DI"]=(sp[1]||"").trim();
+  } else {
+    p["TEL"]=g('v2-tel') === "—" ? "" : g('v2-tel');
+    p["DI"]=g('v2-di') === "—" ? "" : g('v2-di');
+  }
+  p["ファミレス"]=g('v-family');
+  const mainKeys = ['印', '卒業', 'Dr./出身大学', '診療科', 'PHS', '直PHS', '①', '②', '備考'];
+  const facilitiesKeys = ['関連病院施設等', '関連病院TEL', '関連病院備考'];
+  const vendorsKeys = ['部署', '業者', '内線', 'TEL・メモ'];
+  const collectTable = (tbody, keys) => {
+    const rows = tbody.children.length;
+    for(let i=1; i<=rows; i++){
+      for(let j=0; j<keys.length; j++){
+        const cell = tbody.querySelector(`td[data-r="${i-1}"][data-c="${j}"]`);
+        const value = cell ? cell.textContent.trim() : "";
+        if (value) { writeSeries(p, keys[j], i, value); }
+      }
+    }
+  };
+  collectTable(document.getElementById('tbody'), mainKeys);
+  collectTable(document.getElementById('facilities-tbody'), facilitiesKeys);
+  collectTable(document.getElementById('vendors-tbody'), vendorsKeys);
+  return p;
+}
+
+async function saveToServer() {
+  if (!currentData || !currentData.code) { setStatus('まず転記してください', 'error'); return; }
+  setStatus('保存中...'); 
+  const p = collectForSave();
+  if (!p) { setStatus('保存データがありません', 'error'); return; }
+  try {
+    const r = await fetch(`${API}/api/mdata/${encodeURIComponent(currentData.code)}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kv: p, user: currentUserId })
+    });
+    const j = await safeJSON(r);
+    if (r.ok && j.ok) { 
+      setStatus(`保存しました（${j.updated??0}項目・削除${j.removed??0}）`, 'success'); 
+      syncMetaFields();
+      alert('変更を保存しました。');
+      await clearForm();
+    }
+    else { setStatus((j && j.error) || '保存失敗', 'error'); }
+  } catch (e) { setStatus('保存中にエラー: ' + e.message, 'error'); }
+}
+
+async function clearForm() {
+  const codeSel=document.getElementById('codeSelect'), prefSel=document.getElementById('prefSelect');
+  if (currentLockCode) await releaseLock(currentLockCode);
+  if(codeSel){ codeSel.value=''; codeSel.disabled=true; codeSel.innerHTML='<option value="">選択</option>'; }
+  if(prefSel) prefSel.value='';
+  ['v-code','v-pref','v-hospital','v-zip','v-addr','v-station','v-teldi','v-family','v2-code','v2-hospital','v2-tel','v2-di'].forEach(id=>{ 
+    const el=document.getElementById(id); if(el) el.textContent='—'; 
+  });
+  document.querySelectorAll('tbody').forEach(tb => tb.innerHTML = '');
+  buildRows(document.getElementById('tbody'), DEFAULT_ROWS.main, 9, 'main');
+  buildRows(document.getElementById('facilities-tbody'), DEFAULT_ROWS.facilities, 3, 'facilities');
+  buildRows(document.getElementById('vendors-tbody'), DEFAULT_ROWS.vendors, 4, 'vendors');
+  updateRowCountBadges(); 
+  clearAllSelections(); 
+  currentData=null; 
+  setButtons(false);
+  setStatus('フォームをクリアしました', 'success');
+  console.log('フォームクリア完了 - デフォルト行数に戻しました:', DEFAULT_ROWS);
+}
+
+/* ===== CSVとDropdown初期化 ===== */
+function initFileInput(){
+  const fileInput=document.getElementById('mdataFile');
+  fileInput.addEventListener('change', async e => {
+    const file = e.target.files && e.target.files[0]; if (!file) return;
+    setStatus('CSVファイルを読み込み中...');
+    try {
+      const fd = new FormData(); fd.append('file', file);
+      const resp = await fetch(`${API}/api/mdata/import_csv`, { method: 'POST', body: fd });
+      const result = await safeJSON(resp);
+      if (resp.ok && result.ok) {
+        setStatus(`読み込み完了: ${result.imported??'---'}件`, 'success'); setButtons(true);
+      } else { setStatus(`エラー: ${(result && result.error) || resp.statusText}`, 'error'); }
+    } catch (err) { setStatus(`エラー: ${err.message}`, 'error'); }
+    fileInput.value = '';
+  });
+}
+
+const PREFS=[["01","北海道"],["02","青森県"],["03","岩手県"],["04","宮城県"],["05","秋田県"],["06","山形県"],["07","福島県"],["08","茨城県"],["09","栃木県"],["10","群馬県"],["11","埼玉県"],["12","千葉県"],["13","東京都"],["14","神奈川県"],["15","新潟県"],["16","富山県"],["17","石川県"],["18","福井県"],["19","山梨県"],["20","長野県"],["21","岐阜県"],["22","静岡県"],["23","愛知県"],["24","三重県"],["25","滋賀県"],["26","京都府"],["27","大阪府"],["28","兵庫県"],["29","奈良県"],["30","和歌山県"],["31","鳥取県"],["32","島根県"],["33","岡山県"],["34","広島県"],["35","山口県"],["36","徳島県"],["37","香川県"],["38","愛媛県"],["39","高知県"],["40","福岡県"],["41","佐賀県"],["42","長崎県"],["43","熊本県"],["44","大分県"],["45","宮崎県"],["46","鹿児島県"],["47","沖縄県"]];
+
+async function fetchCodes(prefix = null) {
+  try {
+    const url = new URL(`${API}/api/mdata/search`); if (prefix) url.searchParams.append('prefix', prefix);
+    const response = await fetch(url); const result = await safeJSON(response);
+    if (response.ok && result.ok && Array.isArray(result.items)) return result.items;
+  } catch (error) { console.error('Search error:', error); } return [];
+}
+
+function initDropdowns() {
+  const prefSel=document.getElementById('prefSelect'), codeSel=document.getElementById('codeSelect');
+  PREFS.forEach(([no,name])=>{ const o=document.createElement('option'); o.value=no; o.textContent=`${parseInt(no,10)} ${name}`; prefSel.appendChild(o); });
+  prefSel.addEventListener('change', async () => {
+    const pref = prefSel.value; codeSel.innerHTML='<option value="">選択</option>'; codeSel.disabled=true; if(!pref) return;
+    const items = await fetchCodes(`${pref}-`);
+    if (items.length) {
+      codeSel.disabled = false;
+      items.forEach(it => {
+        const o=document.createElement('option');
+        o.value=it.code;
+        o.textContent=it.hospital?`${it.code} ${it.hospital}`:it.code;
+        o.setAttribute('data-base-text', o.textContent);
+        codeSel.appendChild(o);
+      });
+      await fetchLocks(); decorateCodeSelect();
+    }
+  });
+  codeSel.addEventListener('change', async () => {
+    const v = codeSel.value; if (!v) return;
+    await fillFromServer();
+  });
+}
+
+/* ===== Socket.IO ===== */
+function initSocket() {
+  socket = io(API, { transports: ['websocket', 'polling'] });
+  socket.on('connect', () => { socket.emit('user_join', { user_id: currentUserId, username: currentUsername }); });
+  socket.on('lock_acquired', (payload) => {
+    if (!LOCK_AVAILABLE || !payload || !payload.code) return;
+    currentLocks[payload.code] = payload.user || { user_id: 'unknown' };
+    decorateCodeSelect();
+  });
+  socket.on('lock_released', (payload) => {
+    if (!LOCK_AVAILABLE || !payload || !payload.code) return;
+    delete currentLocks[payload.code];
+    decorateCodeSelect();
+  });
+}
+
+/* ===== 初期化（デフォルト行数設定） ===== */
+function initInitialRows() {
+  buildRows(document.getElementById('tbody'), DEFAULT_ROWS.main, 9, 'main');
+  buildRows(document.getElementById('facilities-tbody'), DEFAULT_ROWS.facilities, 3, 'facilities');
+  buildRows(document.getElementById('vendors-tbody'), DEFAULT_ROWS.vendors, 4, 'vendors');
+  console.log('デフォルト行数で初期化完了:', DEFAULT_ROWS);
+}
+
+function randomUsername() {
+  const animals = ['Fox','Cat','Dog','Bear','Koala','Panda','Deer','Hawk','Dolphin','Otter'];
+  return animals[Math.floor(Math.random()*animals.length)] + '-' + Math.random().toString(36).slice(2,5);
+}
+
+async function initApp() {
+  if (window.innerWidth < 768) {
+    const warning = document.getElementById('mobile-warning');
+    if (warning) {
+      warning.style.display = 'block';
+    }
+    console.warn('⚠️ スマートフォンで閲覧中: PC/タブレット推奨環境');
+  }
+  
+  currentUserId = 'user_' + Math.random().toString(36).slice(2, 11);
+  currentUsername = randomUsername();
+  await detectLockAPI();
+  initExcelLikeSelection();
+  initInitialRows(); 
+  initMetaFieldsAutoSave();
+  initTableCellsAutoSave();
+  updateRowCountBadges();
+  initDropdowns(); initFileInput(); initSocket(); testConnection();
+  window.addEventListener('beforeunload', () => {
+    if (currentLockCode) {
+      const payload = JSON.stringify({ code: currentLockCode, user_id: currentUserId });
+      const blob = new Blob([payload], {type:'application/json'});
+      navigator.sendBeacon?.(`${API}/api/lock/release`, blob);
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', initApp);
+</script>
+</body>
+</html>
