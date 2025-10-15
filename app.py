@@ -763,7 +763,7 @@ def cleanup_expired_locks():
     for code in expired_codes:
         if code in active_locks:
             del active_locks[code]
-            socketio.emit('lock_released', {'code': code}, broadcast=True)
+            socketio.emit('lock_released', {'code': code})
 
     return len(expired_codes)
 
@@ -794,6 +794,11 @@ def lock_acquire():
 
         if not code or not user_id:
             return jsonify({"ok": False, "error": "コードとユーザーIDが必要です"}), 400
+
+        # このユーザーが既に他の病院をロックしていないかチェック
+        for locked_code, lock_info in active_locks.items():
+            if lock_info['user_id'] == user_id and locked_code != code:
+                return jsonify({"ok": False, "error": "既に別の病院をロックしています"}), 400
 
         existing_lock = active_locks.get(code)
         if existing_lock and existing_lock['user_id'] != user_id:
@@ -842,7 +847,7 @@ def lock_release():
             lock_owner = existing_lock.get('user_id')
             if lock_owner == user_id:
                 del active_locks[code]
-                socketio.emit('lock_released', {'code': code}, broadcast=True)
+                socketio.emit('lock_released', {'code': code})
                 return jsonify({"ok": True, "message": "ロックを解放しました"})
             else:
                 return jsonify({"ok": False, "error": "権限がありません"}), 403
