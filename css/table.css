@@ -1,0 +1,128 @@
+/* ===== テーブル共通スタイル ===== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  table-layout: fixed;
+}
+
+thead {
+  background: var(--gray);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+th {
+  border: var(--line);
+  padding: 6px 4px;
+  text-align: center;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+td {
+  border: var(--line);
+  padding: 3px 6px;
+  min-height: 33px;
+  height: auto;
+  vertical-align: middle;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+  line-height: 1.23;
+}
+
+td.center {
+  text-align: center;
+}
+
+td.editable {
+  cursor: text;
+  transition: background 0.15s;
+}
+
+td.editable:hover {
+  background: #f0f8ff;
+}
+
+td.editable:focus {
+  outline: 2px solid var(--blue);
+  outline-offset: -2px;
+  background: #fff;
+}
+
+/* ===== Excel風選択 ===== */
+td.sel {
+  background: var(--sel) !important;
+  position: relative;
+}
+
+td.sel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--sel-border);
+  pointer-events: none;
+}
+
+td.anchor {
+  background: #bfdbfe !important;
+}
+
+td.copying {
+  animation: copyFlash 0.6s ease;
+}
+
+@keyframes copyFlash {
+  0%, 100% { background: var(--sel); }
+  50% { background: #93c5fd; }
+}
+
+/* ===== テーブルコントロール ===== */
+.table-wrap {
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.table-controls {
+  margin-top: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.table-controls button {
+  padding: 5px 10px;
+  margin-right: 5px;
+  font-size: 11px;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.table-controls button:hover {
+  background: #e9ecef;
+}
+
+/* ===== 選択情報表示 ===== */
+.selection-info {
+  position: absolute;
+  top: -28px;
+  right: 0;
+  background: rgba(33, 150, 243, 0.9);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: bold;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 100;
+}
+
+.selection-info.show {
+  opacity: 1;
+}

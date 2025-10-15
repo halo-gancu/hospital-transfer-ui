@@ -1,0 +1,332 @@
+/* ===== CSS変数 ===== */
+:root {
+  --a4w: 210mm;
+  --a4h: 297mm;
+  --padH: 8mm;
+  --padV: 12mm;
+  --line: 1px solid #111;
+  --gray: #f5f5f5;
+  --rowh: 31px;
+  --fac-rowh: 26px;
+  --blue: #2196f3;
+  --sel: #dbeafe;
+  --sel-border: #60a5fa;
+}
+
+/* ===== 基本設定 ===== */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: #eaeaea;
+  font-family: "Yu Gothic UI", "Yu Gothic", "游ゴシック体", "YuGothic", "Yu Gothic", "游ゴシック", sans-serif;
+  font-size: 10px;
+  line-height: 1.35;
+  color: #000;
+}
+
+body.noselect {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ===== ナビゲーションバー ===== */
+.nav-bar {
+  background: #343a40;
+  padding: 10px 0;
+  text-align: center;
+  position: relative;
+}
+
+.nav-bar button {
+  color: #fff;
+  background: #495057;
+  border: none;
+  padding: 8px 16px;
+  margin: 0 5px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.nav-bar button:hover {
+  background: #6c757d;
+}
+
+.nav-bar button.active {
+  background: #007bff;
+}
+
+.logout-link {
+  padding: 6px 12px;
+  background: transparent;
+  color: #fff;
+  text-decoration: none;
+  border: 1px solid #fff;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.logout-link:hover {
+  background: #fff;
+  color: #000;
+}
+
+.nav-bar .logout-link {
+  position: absolute;
+  right: 12px;
+  top: 8px;
+}
+
+/* ===== ページ切り替え ===== */
+.page {
+  display: none;
+}
+
+.page.active {
+  display: block;
+}
+
+/* ===== コントロールパネル ===== */
+.control-panel {
+  width: 210mm;
+  margin: 8px auto 0;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 12px;
+  padding: 9px;
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  flex-wrap: wrap;
+}
+
+.control-panel label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: bold;
+}
+
+.control-panel input[type="file"] {
+  font-size: 11px;
+}
+
+.control-panel select {
+  padding: 4px 8px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+}
+
+.control-panel button {
+  padding: 6px 14px;
+  background: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.control-panel button:hover {
+  background: #0056b3;
+}
+
+.control-panel button:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+.control-panel button.clear {
+  background: #6c757d;
+}
+
+.control-panel button.clear:hover {
+  background: #5a6268;
+}
+
+.control-panel button.test {
+  background: #28a745;
+}
+
+.control-panel button.test:hover {
+  background: #1e7e34;
+}
+
+#status, #status2 {
+  margin-left: auto;
+  opacity: 0.85;
+  font-size: 11px;
+  color: #666;
+}
+
+.status-error {
+  color: #dc3545 !important;
+  font-weight: bold;
+}
+
+.status-success {
+  color: #28a745 !important;
+  font-weight: bold;
+}
+
+/* ===== シート（A4用紙風） ===== */
+.sheet {
+  width: var(--a4w);
+  min-height: var(--a4h);
+  margin: 12px auto;
+  background: #fff;
+  padding: var(--padV) var(--padH);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+}
+
+.top {
+  margin-bottom: 12px;
+}
+
+h1.title {
+  text-align: center;
+  font-size: 17px;
+  margin: 0 0 12px;
+  letter-spacing: 0.02em;
+  font-weight: 700;
+}
+
+/* ===== メタ情報 ===== */
+.meta {
+  display: grid;
+  gap: 7px 0;
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.row1, .row2, .row3 {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  align-items: start;
+}
+
+.label {
+  margin-right: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.value {
+  margin-right: 22px;
+  white-space: nowrap;
+  border-bottom: 1px dotted #999;
+  min-width: 78px;
+  padding: 2px 4px;
+  min-height: 18px;
+}
+
+.value.zip {
+  margin-right: 8px;
+  min-width: 78px;
+}
+
+/* ===== セクション ===== */
+.section {
+  margin-bottom: 20px;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+/* ===== モバイル警告 ===== */
+.mobile-warning {
+  background: #fff3cd;
+  color: #856404;
+  padding: 12px;
+  text-align: center;
+  font-size: 14px;
+  border-bottom: 2px solid #ffc107;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  display: none;
+}
+
+/* ===== ユーザー情報パネル ===== */
+#active-users-panel {
+  position: fixed;
+  top: 60px;
+  right: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  padding: 15px;
+  max-width: 320px;
+  display: none;
+  z-index: 999;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+#active-users-toggle {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 10px 15px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 998;
+  transition: background 0.2s;
+}
+
+#active-users-toggle:hover {
+  background: #0056b3;
+}
+
+/* ===== 印刷用スタイル ===== */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+  
+  html, body {
+    background: #fff;
+  }
+  
+  body {
+    margin: 0 !important;
+  }
+  
+  .nav-bar, .control-panel, .table-controls, .mobile-warning,
+  #active-users-panel, #active-users-toggle {
+    display: none;
+  }
+  
+  .sheet {
+    box-shadow: none;
+    margin: 0;
+    width: 210mm;
+    height: 297mm;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

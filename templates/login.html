@@ -1,133 +1,191 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <title>ログイン | 病院情報管理</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    body {
-      font-family: system-ui, sans-serif;
-      background: #f7f7f8;
-      margin: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-    }
-    .card {
-      width: min(360px, 92vw);
-      background: #fff;
-      padding: 22px 22px 24px;
-      border-radius: 14px;
-      box-shadow: 0 8px 28px rgba(0,0,0,.08);
-    }
-    h1 { 
-      font-size: 18px; 
-      margin: 0 0 16px; 
-      text-align: center;
-    }
-    label { 
-      display: block; 
-      font-size: 12px; 
-      color: #555; 
-      margin: 12px 0 6px; 
-    }
-    input {
-      width: 100%; 
-      box-sizing: border-box;
-      padding: 11px 12px;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      font-size: 14px;
-    }
-    input:focus {
-      outline: none;
-      border-color: #2563eb;
-    }
-    button {
-      width: 100%; 
-      margin-top: 16px; 
-      padding: 12px;
-      border: none; 
-      border-radius: 10px;
-      background: #2563eb; 
-      color: #fff; 
-      font-weight: 600; 
-      font-size: 14px;
-      cursor: pointer;
-    }
-    button:hover { 
-      background: #1e4ed8; 
-    }
-    .hint { 
-      color: #666; 
-      font-size: 12px; 
-      margin-top: 12px; 
-      text-align: center;
-    }
-    .error {
-      background: #fee;
-      color: #c00;
-      padding: 8px;
-      border-radius: 6px;
-      font-size: 13px;
-      margin-top: 12px;
-      display: none;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ログイン - 病院情報管理システム</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Yu Gothic UI', 'Yu Gothic', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 15px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #5568d3;
+        }
+        
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            border-left: 4px solid #c33;
+        }
+        
+        .info-message {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 20px;
+            font-size: 13px;
+            text-align: center;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 15px;
+            color: #667eea;
+        }
+    </style>
 </head>
 <body>
-  <div class="card">
-    <h1>ログイン</h1>
+    <div class="login-container">
+        <h1>🏥 病院情報管理システム</h1>
+        
+        <div id="errorMsg" class="error-message" style="display: none;"></div>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">ユーザー名</label>
+                <input type="text" id="username" name="username" required autofocus>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">パスワード</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            
+            <button type="submit">ログイン</button>
+        </form>
+        
+        <div id="loading" class="loading">ログイン中...</div>
+        
+        <div class="info-message">
+            初期ログイン情報は setup_users.py 実行時に表示されます
+        </div>
+    </div>
 
-    <form id="loginForm">
-      <input type="hidden" id="csrf" value="{{ csrf_token }}">
-      
-      <label for="user">ユーザーID</label>
-      <input id="user" name="user" autocomplete="username" placeholder="例: yamada" required />
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // CSRFトークン取得
+            const csrfResp = await fetch('/api/csrf_token');
+            const csrfData = await csrfResp.json();
+            const csrfToken = csrfData.token;
 
-      <label for="pw">パスワード</label>
-      <input id="pw" name="pw" type="password" autocomplete="current-password" placeholder="パスワードを入力" required />
+            const form = document.getElementById('loginForm');
+            const errorMsg = document.getElementById('errorMsg');
+            const loading = document.getElementById('loading');
 
-      <button type="submit">ログイン</button>
-      
-      <div class="error" id="errorMsg"></div>
-    </form>
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const username = document.getElementById('username').value.trim();
+                const password = document.getElementById('password').value;
 
-    <div class="hint">パスワードはハッシュ化されて安全に保存されています。</div>
-  </div>
+                errorMsg.style.display = 'none';
+                loading.style.display = 'block';
 
-  <script>
-  document.querySelector("#loginForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    
-    const user = document.getElementById("user").value.trim();
-    const pw   = document.getElementById("pw").value;
-    const csrf = document.getElementById("csrf").value;
-    const errorMsg = document.getElementById("errorMsg");
+                try {
+                    const response = await fetch('/api/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            user: username,
+                            pw: password,
+                            csrf: csrfToken
+                        })
+                    });
 
-    errorMsg.style.display = 'none';
+                    const data = await response.json();
 
-    try {
-      const res = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user, pw, csrf })
-      });
-      
-      const data = await res.json().catch(() => ({ ok: false, error: "サーバーエラー" }));
-      
-      if (data.ok) {
-        location.href = "/";
-      } else {
-        errorMsg.textContent = data.error || "ログインに失敗しました";
-        errorMsg.style.display = 'block';
-      }
-    } catch (err) {
-      errorMsg.textContent = "通信エラーが発生しました";
-      errorMsg.style.display = 'block';
-    }
-  });
-  </script>
+                    if (response.ok && data.ok) {
+                        window.location.href = '/';
+                    } else {
+                        errorMsg.textContent = data.error || 'ログインに失敗しました';
+                        errorMsg.style.display = 'block';
+                    }
+                } catch (error) {
+                    errorMsg.textContent = 'サーバーとの通信に失敗しました';
+                    errorMsg.style.display = 'block';
+                } finally {
+                    loading.style.display = 'none';
+                }
+            });
+        });
+    </script>
 </body>
 </html>

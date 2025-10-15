@@ -1,0 +1,46 @@
+/* ===== スマートフォン（〜767px） ===== */
+@media (max-width: 767px) {
+  .control-panel, .sheet {
+    transform: scale(0.45);
+    transform-origin: top left;
+    margin-left: 0;
+  }
+  
+  body {
+    overflow-x: auto;
+  }
+  
+  .mobile-warning {
+    display: block;
+  }
+}
+
+/* ===== タブレット（768px〜1023px） ===== */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .control-panel, .sheet {
+    transform: scale(0.85);
+    transform-origin: top center;
+  }
+}
+
+/* ===== PC（1024px〜） ===== */
+@media (min-width: 1024px) {
+  .control-panel, .sheet {
+    transform: scale(1);
+  }
+}
+
+/* ===== タッチデバイス対応 ===== */
+@media (hover: none) and (pointer: coarse) {
+  .editable:hover {
+    background: #fff;
+  }
+  
+  * {
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+  }
+  
+  td.editable {
+    min-height: 36px;
+  }
+}

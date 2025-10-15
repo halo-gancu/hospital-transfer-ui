@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ユーザー管理 - 病院情報管理システム</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Yu Gothic UI', 'Yu Gothic', sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn:hover {
+            background: #5568d3;
+        }
+        
+        .btn-back {
+            background: #6c757d;
+        }
+        
+        .btn-back:hover {
+            background: #5a6268;
+        }
+        
+        table {
+            width: 100%;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        th, td {
+            padding: 15px;
+            text-align: left;
+        }
+        
+        th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+        
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .status-active {
+            color: #28a745;
+            font-weight: 600;
+        }
+        
+        .status-inactive {
+            color: #dc3545;
+            font-weight: 600;
+        }
+        
+        .role-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .role-admin {
+            background: #ffc107;
+            color: #000;
+        }
+        
+        .role-user {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .actions button {
+            padding: 6px 12px;
+            margin-right: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        
+        .btn-edit {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background: white;
+            margin: 50px auto;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+        }
+        
+        .modal h2 {
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .form-group input[readonly] {
+            background: #f8f9fa;
+            cursor: not-allowed;
+        }
+        
+        .form-group small {
+            display: block;
+            margin-top: 5px;
+            color: #6c757d;
+            font-size: 12px;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>👥 ユーザー管理</h1>
+            <div>
+                <button class="btn" onclick="openCreateModal()">+ 新規ユーザー</button>
+                <a href="/" class="btn btn-back">← 戻る</a>
+            </div>
+        </div>
+        
+        <div id="loading" class="loading">読み込み中...</div>
+        
+        <table id="userTable" style="display: none;">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>ユーザー名</th>
+                    <th>氏名</th>
+                    <th>権限</th>
+                    <th>状態</th>
+                    <th>登録日</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="userTableBody"></tbody>
+        </table>
+    </div>
+    
+    <!-- 新規作成モーダル -->
+    <div id="createModal" class="modal">
+        <div class="modal-content">
+            <h2>新規ユーザー作成</h2>
+            <form id="createForm">
+                <div class="form-group">
+                    <label>ユーザー名 <span style="color: red;">*</span></label>
+                    <input type="text" name="username" required>
+                    <small>半角英数字で入力してください（例：nakagawa）</small>
+                </div>
+                <div class="form-group">
+                    <label>パスワード <span style="color: red;">*</span></label>
+                    <input type="password" name="password" required>
+                    <small>8文字以上で入力してください</small>
+                </div>
+                <div class="form-group">
+                    <label>氏名 <span style="color: red;">*</span></label>
+                    <input type="text" name="full_name" required>
+                </div>
+                <div class="form-group">
+                    <label>権限</label>
+                    <select name="role">
+                        <option value="user">一般ユーザー</option>
+                        <option value="admin">管理者</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>メールアドレス（任意）</label>
+                    <input type="email" name="email">
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn">作成</button>
+                    <button type="button" class="btn btn-back" onclick="closeModal('createModal')">キャンセル</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 編集モーダル -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <h2>ユーザー編集</h2>
+            <form id="editForm">
+                <input type="hidden" name="user_id">
+                <div class="form-group">
+                    <label>ユーザー名 <span style="color: red;">*</span></label>
+                    <input type="text" name="username" required>
+                    <small>ログインIDです（変更可能・他のユーザーと重複不可）</small>
+                </div>
+                <div class="form-group">
+                    <label>氏名</label>
+                    <input type="text" name="full_name" required>
+                </div>
+                <div class="form-group">
+                    <label>権限</label>
+                    <select name="role">
+                        <option value="user">一般ユーザー</option>
+                        <option value="admin">管理者</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>新しいパスワード（変更する場合のみ）</label>
+                    <input type="password" name="new_password">
+                </div>
+                <div class="form-group">
+                    <label>メールアドレス</label>
+                    <input type="email" name="email">
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn">更新</button>
+                    <button type="button" class="btn btn-back" onclick="closeModal('editModal')">キャンセル</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/users');
+                const data = await response.json();
+                
+                if (data.ok) {
+                    const tbody = document.getElementById('userTableBody');
+                    tbody.innerHTML = '';
+                    
+                    data.users.forEach(user => {
+                        const row = document.createElement('tr');
+                        const roleLabel = user.role === 'admin' ? '管理者' : '一般';
+                        const statusLabel = user.is_active ? '有効' : '無効';
+                        
+                        row.innerHTML = `
+                            <td>${user.id}</td>
+                            <td>${user.username}</td>
+                            <td>${user.full_name}</td>
+                            <td><span class="role-badge role-${user.role}">${roleLabel}</span></td>
+                            <td class="status-${user.is_active ? 'active' : 'inactive'}">${statusLabel}</td>
+                            <td>${user.created_at}</td>
+                            <td class="actions">
+                                <button class="btn-edit" onclick="openEditModal(${user.id})">編集</button>
+                                <button class="btn-delete" onclick="deleteUser(${user.id})">無効化</button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('userTable').style.display = 'table';
+                }
+            } catch (error) {
+                alert('ユーザー一覧の取得に失敗しました');
+            }
+        }
+        
+        function openCreateModal() {
+            document.getElementById('createModal').style.display = 'block';
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        
+        async function openEditModal(userId) {
+            const response = await fetch('/api/users');
+            const data = await response.json();
+            const user = data.users.find(u => u.id === userId);
+            
+            if (user) {
+                const form = document.getElementById('editForm');
+                form.user_id.value = user.id;
+                form.username.value = user.username;
+                form.full_name.value = user.full_name;
+                form.role.value = user.role;
+                form.email.value = user.email || '';
+                document.getElementById('editModal').style.display = 'block';
+            }
+        }
+        
+        document.getElementById('createForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            try {
+                const response = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.ok) {
+                    alert('ユーザーを作成しました');
+                    closeModal('createModal');
+                    e.target.reset();
+                    loadUsers();
+                } else {
+                    alert(result.error || '作成に失敗しました');
+                }
+            } catch (error) {
+                alert('エラーが発生しました');
+            }
+        });
+        
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            const userId = data.user_id;
+            delete data.user_id;
+            // ユーザー名も送信する（変更可能になった）
+            
+            if (!data.new_password) {
+                delete data.new_password;
+            }
+            
+            try {
+                const response = await fetch(`/api/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.ok) {
+                    alert('ユーザー情報を更新しました');
+                    closeModal('editModal');
+                    loadUsers();
+                } else {
+                    alert(result.error || '更新に失敗しました');
+                }
+            } catch (error) {
+                alert('エラーが発生しました');
+            }
+        });
+        
+        async function deleteUser(userId) {
+            if (!confirm('このユーザーを無効化しますか？')) return;
+            
+            try {
+                const response = await fetch(`/api/users/${userId}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (result.ok) {
+                    alert('ユーザーを無効化しました');
+                    loadUsers();
+                } else {
+                    alert(result.error || '無効化に失敗しました');
+                }
+            } catch (error) {
+                alert('エラーが発生しました');
+            }
+        }
+        
+        loadUsers();
+    </script>
+</body>
+</html>
