@@ -59,6 +59,15 @@ def index():
         return redirect(url_for('login'))
     return send_from_directory('.', 'index.html')
 
+# 静的ファイルの提供
+@app.route('/css/<path:filename>')
+def serve_css(filename):
+    return send_from_directory('css', filename)
+
+@app.route('/js/<path:filename>')
+def serve_js(filename):
+    return send_from_directory('js', filename)
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
