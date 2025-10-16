@@ -92,16 +92,6 @@
             border-left: 4px solid #c33;
         }
         
-        .info-message {
-            background: #e3f2fd;
-            color: #1976d2;
-            padding: 12px;
-            border-radius: 6px;
-            margin-top: 20px;
-            font-size: 13px;
-            text-align: center;
-        }
-        
         .loading {
             display: none;
             text-align: center;
@@ -132,9 +122,11 @@
         
         <div id="loading" class="loading">ログイン中...</div>
         
-        <div class="info-message">
-            初期ログイン情報は setup_users.py 実行時に表示されます
-        </div>
+        <p style="text-align: center; margin-top: 1rem;">
+            <a href="/reset-password-request" style="color: #4F46E5; text-decoration: none;">
+                パスワードを忘れた方はこちら
+            </a>
+        </p>
     </div>
 
     <script>
