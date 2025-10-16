@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, send_from_directory
 from flask_socketio import SocketIO, emit
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
@@ -48,6 +48,7 @@ def init_db():
     
     conn.commit()
     conn.close()
+    print("✅ データベーステーブルを初期化しました")
 
 # アプリケーション起動時にデータベースを初期化
 init_db()
@@ -56,7 +57,7 @@ init_db()
 def index():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    return render_template('index.html', username=session.get('username'))
+    return send_from_directory('.', 'index.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -203,10 +204,11 @@ def api_users():
             return jsonify({'error': 'Username or email already exists'}), 400
 
 if __name__ == '__main__':
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("🏥 病院情報管理システム サーバー起動中...")
-    print("🔐 ログインURL: http://localhost:5000/login")
+    print("=" * 60)
+    print(f"📍 ログインURL: http://localhost:5000/login")
     print(f"💾 データベース: {DATABASE}")
-    print("="*60 + "\n")
+    print("=" * 60 + "\n")
     
     app.run(debug=True, host='0.0.0.0')
