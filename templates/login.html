@@ -92,11 +92,21 @@
             border-left: 4px solid #c33;
         }
         
-        .loading {
-            display: none;
+        .reset-link {
             text-align: center;
-            margin-top: 15px;
+            margin-top: 20px;
+        }
+        
+        .reset-link a {
             color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s;
+        }
+        
+        .reset-link a:hover {
+            color: #5568d3;
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -104,9 +114,17 @@
     <div class="login-container">
         <h1>🏥 病院情報管理システム</h1>
         
-        <div id="errorMsg" class="error-message" style="display: none;"></div>
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="error-message">
+                    {% for message in messages %}
+                        {{ message }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
         
-        <form id="loginForm">
+        <form method="POST" action="{{ url_for('login') }}">
             <div class="form-group">
                 <label for="username">ユーザー名</label>
                 <input type="text" id="username" name="username" required autofocus>
@@ -120,64 +138,9 @@
             <button type="submit">ログイン</button>
         </form>
         
-        <div id="loading" class="loading">ログイン中...</div>
-        
-        <p style="text-align: center; margin-top: 1rem;">
-            <a href="/reset-password-request" style="color: #4F46E5; text-decoration: none;">
-                パスワードを忘れた方はこちら
-            </a>
-        </p>
+        <div class="reset-link">
+            <a href="{{ url_for('reset_password_request') }}">パスワードを忘れた方はこちら</a>
+        </div>
     </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            // CSRFトークン取得
-            const csrfResp = await fetch('/api/csrf_token');
-            const csrfData = await csrfResp.json();
-            const csrfToken = csrfData.token;
-
-            const form = document.getElementById('loginForm');
-            const errorMsg = document.getElementById('errorMsg');
-            const loading = document.getElementById('loading');
-
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                const username = document.getElementById('username').value.trim();
-                const password = document.getElementById('password').value;
-
-                errorMsg.style.display = 'none';
-                loading.style.display = 'block';
-
-                try {
-                    const response = await fetch('/api/login', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            user: username,
-                            pw: password,
-                            csrf: csrfToken
-                        })
-                    });
-
-                    const data = await response.json();
-
-                    if (response.ok && data.ok) {
-                        window.location.href = '/';
-                    } else {
-                        errorMsg.textContent = data.error || 'ログインに失敗しました';
-                        errorMsg.style.display = 'block';
-                    }
-                } catch (error) {
-                    errorMsg.textContent = 'サーバーとの通信に失敗しました';
-                    errorMsg.style.display = 'block';
-                } finally {
-                    loading.style.display = 'none';
-                }
-            });
-        });
-    </script>
 </body>
 </html>
