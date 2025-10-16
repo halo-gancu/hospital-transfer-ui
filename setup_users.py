@@ -11,20 +11,31 @@ def setup_users():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
-    # ユーザーリスト（username, password, email, role）
-    users = [
-        ('admin',  'Admin@2024',  'admin@cantera-kyoto.com', 'admin'),
-        ('toyoda', 'Toyoda@2024', 'toyoda@cantera-kyoto.com', 'user'),
-        ('kudo',   'Kudo@2024',   'kudo@cantera-kyoto.com',   'user'),
-        ('yamada', 'Yamada@2024', 'yamada@cantera-kyoto.com', 'user'),
-    ]
+    # 管理者1人
+    admin_user = ('admin', 'Admin@2024', 'admin@cantera-kyoto.com', 'admin')
+    
+    # ユーザー49人（user01 ～ user49）
+    regular_users = []
+    for i in range(1, 50):
+        username = f'user{i:02d}'  # user01, user02, ..., user49
+        password = f'User{i:02d}@2024'  # User01@2024, User02@2024, ...
+        email = f'user{i:02d}@cantera-kyoto.com'
+        role = 'user'
+        regular_users.append((username, password, email, role))
+    
+    # 全ユーザーリスト（管理者1人 + ユーザー49人 = 50人）
+    all_users = [admin_user] + regular_users
     
     print("=" * 60)
     print("🏥 病院情報管理システム - ユーザー初期化")
+    print(f"   管理者: 1人 / ユーザー: 49人 / 合計: 50人")
     print("=" * 60)
     print("\nユーザーを登録中...\n")
     
-    for username, password, email, role in users:
+    success_count = 0
+    error_count = 0
+    
+    for username, password, email, role in all_users:
         try:
             # パスワードをハッシュ化
             password_hash = generate_password_hash(password)
@@ -41,9 +52,11 @@ def setup_users():
             
             role_label = '管理者' if role == 'admin' else 'ユーザー'
             print(f'✅ [{role_label}] {username} - パスワード: {password}')
+            success_count += 1
             
         except Exception as e:
             print(f'❌ エラー: {username} の登録失敗: {e}')
+            error_count += 1
     
     conn.commit()
     conn.close()
@@ -51,12 +64,18 @@ def setup_users():
     print("\n" + "=" * 60)
     print("✅ セットアップ完了！")
     print("=" * 60)
-    print("\n【初期ログイン情報】")
-    print("  管理者: admin / Admin@2024")
-    print("  ユーザー: toyoda / Toyoda@2024")
-    print("\n【次のステップ】")
-    print("  1. サーバー起動: python app.py")
-    print("  2. ブラウザでアクセス: http://localhost:5000/login")
+    print(f"\n【登録結果】")
+    print(f"  成功: {success_count}人")
+    if error_count > 0:
+        print(f"  失敗: {error_count}人")
+    print(f"\n【初期ログイン情報】")
+    print(f"  管理者: admin / Admin@2024")
+    print(f"  ユーザー例: user01 / User01@2024")
+    print(f"  ユーザー例: user02 / User02@2024")
+    print(f"  ... (user01 ～ user49)")
+    print(f"\n【次のステップ】")
+    print(f"  1. サーバー起動: python app.py")
+    print(f"  2. ブラウザでアクセス: http://localhost:5000/login")
     print("=" * 60 + "\n")
 
 if __name__ == '__main__':
