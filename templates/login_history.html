@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ログイン履歴 - 病院情報管理システム</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Yu Gothic UI', 'Meiryo', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .stats-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-card.success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .stat-card.failed {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+        }
+
+        .stat-label {
+            font-size: 13px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+        }
+
+        .filter-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            align-items: end;
+        }
+
+        .filter-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 6px;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .history-table-container {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: #f8f9fa;
+        }
+
+        th {
+            padding: 14px 12px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+            border-bottom: 2px solid #dee2e6;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 14px 12px;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 14px;
+            color: #333;
+        }
+
+        tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .user-agent {
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .pagination button {
+            padding: 8px 14px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination span {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-size: 16px;
+        }
+
+        .ip-address {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #495057;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 16px;
+                align-items: flex-start;
+            }
+
+            .header-actions {
+                width: 100%;
+            }
+
+            .btn {
+                flex: 1;
+                justify-content: center;
+            }
+
+            .filter-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .history-table-container {
+                overflow-x: auto;
+            }
+
+            table {
+                min-width: 800px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- ヘッダー -->
+        <div class="header">
+            <h1>📊 ログイン履歴</h1>
+            <div class="header-actions">
+                <a href="/" class="btn btn-secondary">← メインページに戻る</a>
+            </div>
+        </div>
+
+        <!-- 統計パネル -->
+        <div class="stats-panel">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">総ログイン回数</div>
+                    <div class="stat-value" id="total-count">-</div>
+                </div>
+                <div class="stat-card success">
+                    <div class="stat-label">成功</div>
+                    <div class="stat-value" id="success-count">-</div>
+                </div>
+                <div class="stat-card failed">
+                    <div class="stat-label">失敗</div>
+                    <div class="stat-value" id="failed-count">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">今日のログイン</div>
+                    <div class="stat-value" id="today-count">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- フィルターパネル -->
+        <div class="filter-panel">
+            <div class="filter-grid">
+                <div class="filter-group">
+                    <label>ユーザー</label>
+                    <select id="filter-user">
+                        <option value="">すべてのユーザー</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>状態</label>
+                    <select id="filter-status">
+                        <option value="">すべて</option>
+                        <option value="success">成功のみ</option>
+                        <option value="failed">失敗のみ</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>期間（開始）</label>
+                    <input type="date" id="filter-date-start">
+                </div>
+                <div class="filter-group">
+                    <label>期間（終了）</label>
+                    <input type="date" id="filter-date-end">
+                </div>
+                <div class="filter-group">
+                    <button class="btn btn-primary" onclick="applyFilters()" style="width: 100%;">🔍 検索</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- テーブル -->
+        <div class="history-table-container">
+            <table id="history-table">
+                <thead>
+                    <tr>
+                        <th>日時</th>
+                        <th>ユーザー名</th>
+                        <th>状態</th>
+                        <th>IPアドレス</th>
+                        <th>ブラウザ情報</th>
+                    </tr>
+                </thead>
+                <tbody id="history-tbody">
+                    <tr>
+                        <td colspan="5" class="loading">読み込み中...</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- ページネーション -->
+            <div class="pagination">
+                <button id="prev-btn" onclick="prevPage()">← 前へ</button>
+                <span id="page-info">ページ 1</span>
+                <button id="next-btn" onclick="nextPage()">次へ →</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPage = 0;
+        const limit = 50;
+        let totalCount = 0;
+        let currentRole = '';
+        let filters = {
+            user: '',
+            status: '',
+            dateStart: '',
+            dateEnd: ''
+        };
+
+        // ページ読み込み時
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📊 ログイン履歴ページ読み込み開始');
+            
+            // セッション情報を取得
+            fetchSession();
+            
+            // 履歴を読み込み
+            loadHistory();
+            
+            // 統計を読み込み
+            loadStats();
+        });
+
+        // セッション情報を取得
+        async function fetchSession() {
+            try {
+                const response = await fetch('/api/session');
+                const data = await response.json();
+                
+                if (data.ok && data.logged_in) {
+                    currentRole = data.user.role;
+                    console.log('✅ セッション取得成功:', data.user);
+                    
+                    // 管理者の場合のみユーザーフィルターを有効化
+                    if (currentRole === 'admin') {
+                        loadUsers();
+                    } else {
+                        document.getElementById('filter-user').disabled = true;
+                    }
+                } else {
+                    console.error('❌ セッション取得失敗');
+                    window.location.href = '/login';
+                }
+            } catch (error) {
+                console.error('❌ セッション取得エラー:', error);
+                window.location.href = '/login';
+            }
+        }
+
+        // ユーザーリストを読み込み（管理者のみ）
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/users');
+                const users = await response.json();
+                
+                const select = document.getElementById('filter-user');
+                users.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user.id;
+                    option.textContent = user.username;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('❌ ユーザーリスト取得エラー:', error);
+            }
+        }
+
+        // 履歴を読み込み
+        async function loadHistory() {
+            try {
+                // クエリパラメータを構築
+                const params = new URLSearchParams({
+                    limit: limit,
+                    offset: currentPage * limit
+                });
+                
+                if (filters.user) params.append('user_id', filters.user);
+                
+                const response = await fetch(`/api/login_history?${params}`);
+                const data = await response.json();
+                
+                if (data.ok) {
+                    totalCount = data.total;
+                    displayHistory(data.histories);
+                    updatePagination();
+                } else {
+                    console.error('❌ 履歴取得失敗:', data);
+                    showNoData();
+                }
+            } catch (error) {
+                console.error('❌ 履歴取得エラー:', error);
+                showNoData();
+            }
+        }
+
+        // 履歴を表示
+        function displayHistory(histories) {
+            const tbody = document.getElementById('history-tbody');
+            
+            if (histories.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="no-data">ログイン履歴がありません</td></tr>';
+                return;
+            }
+            
+            // フィルター適用
+            let filtered = histories;
+            
+            if (filters.status === 'success') {
+                filtered = filtered.filter(h => h.success);
+            } else if (filters.status === 'failed') {
+                filtered = filtered.filter(h => !h.success);
+            }
+            
+            if (filters.dateStart) {
+                const startDate = new Date(filters.dateStart);
+                filtered = filtered.filter(h => new Date(h.login_time) >= startDate);
+            }
+            
+            if (filters.dateEnd) {
+                const endDate = new Date(filters.dateEnd);
+                endDate.setHours(23, 59, 59, 999);
+                filtered = filtered.filter(h => new Date(h.login_time) <= endDate);
+            }
+            
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="no-data">条件に一致するログイン履歴がありません</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = filtered.map(history => {
+                const date = new Date(history.login_time);
+                const dateStr = formatDateTime(date);
+                const statusBadge = history.success 
+                    ? '<span class="badge badge-success">✓ 成功</span>'
+                    : '<span class="badge badge-danger">✗ 失敗</span>';
+                
+                return `
+                    <tr>
+                        <td>${dateStr}</td>
+                        <td><strong>${escapeHtml(history.username)}</strong></td>
+                        <td>${statusBadge}</td>
+                        <td class="ip-address">${escapeHtml(history.ip_address || '-')}</td>
+                        <td class="user-agent" title="${escapeHtml(history.user_agent || '-')}">${escapeHtml(history.user_agent || '-')}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // 統計を読み込み
+        async function loadStats() {
+            try {
+                const params = new URLSearchParams();
+                if (filters.user) params.append('user_id', filters.user);
+                
+                const response = await fetch(`/api/login_history?${params}&limit=10000`);
+                const data = await response.json();
+                
+                if (data.ok) {
+                    const histories = data.histories;
+                    const total = histories.length;
+                    const success = histories.filter(h => h.success).length;
+                    const failed = histories.filter(h => !h.success).length;
+                    
+                    // 今日のログイン
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const todayCount = histories.filter(h => {
+                        const loginDate = new Date(h.login_time);
+                        loginDate.setHours(0, 0, 0, 0);
+                        return loginDate.getTime() === today.getTime();
+                    }).length;
+                    
+                    document.getElementById('total-count').textContent = total.toLocaleString();
+                    document.getElementById('success-count').textContent = success.toLocaleString();
+                    document.getElementById('failed-count').textContent = failed.toLocaleString();
+                    document.getElementById('today-count').textContent = todayCount.toLocaleString();
+                }
+            } catch (error) {
+                console.error('❌ 統計取得エラー:', error);
+            }
+        }
+
+        // フィルター適用
+        function applyFilters() {
+            filters.user = document.getElementById('filter-user').value;
+            filters.status = document.getElementById('filter-status').value;
+            filters.dateStart = document.getElementById('filter-date-start').value;
+            filters.dateEnd = document.getElementById('filter-date-end').value;
+            
+            currentPage = 0;
+            loadHistory();
+            loadStats();
+        }
+
+        // ページネーション
+        function updatePagination() {
+            const totalPages = Math.ceil(totalCount / limit);
+            const pageInfo = document.getElementById('page-info');
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            
+            pageInfo.textContent = `ページ ${currentPage + 1} / ${totalPages} (全 ${totalCount} 件)`;
+            prevBtn.disabled = currentPage === 0;
+            nextBtn.disabled = (currentPage + 1) >= totalPages;
+        }
+
+        function prevPage() {
+            if (currentPage > 0) {
+                currentPage--;
+                loadHistory();
+            }
+        }
+
+        function nextPage() {
+            const totalPages = Math.ceil(totalCount / limit);
+            if (currentPage + 1 < totalPages) {
+                currentPage++;
+                loadHistory();
+            }
+        }
+
+        // データなし表示
+        function showNoData() {
+            const tbody = document.getElementById('history-tbody');
+            tbody.innerHTML = '<tr><td colspan="5" class="no-data">データの読み込みに失敗しました</td></tr>';
+        }
+
+        // 日時フォーマット
+        function formatDateTime(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            
+            return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
+        }
+
+        // HTMLエスケープ
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

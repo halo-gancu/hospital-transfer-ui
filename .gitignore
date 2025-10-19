@@ -1,0 +1,9 @@
+﻿.venv/
+__pycache__/
+*.sqlite3
+backup/
+.env
+.DS_Store
+Thumbs.db
+*.sqlite3
+backup/

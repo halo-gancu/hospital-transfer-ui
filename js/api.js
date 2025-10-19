@@ -27,15 +27,37 @@ async function testConnection() {
   }
 }
 
-/* ===== コード検索 ===== */
+/* ===== コード検索（修正版） ===== */
 async function fetchCodes(prefix = null) {
   try {
-    const url = new URL(`${API}/api/mdata/search`);
-    if (prefix) url.searchParams.append('prefix', prefix);
-    const response = await fetch(url);
-    const result = await safeJSON(response);
-    if (response.ok && result.ok && Array.isArray(result.items)) {
-      return result.items;
+    // prefixから都道府県コードを抽出（例: "01-" -> "01"）
+    const prefectureCode = prefix ? prefix.replace('-', '') : null;
+    
+    if (prefectureCode) {
+      // 新しいAPIを使用：病院名付きで取得
+      const url = new URL(`${API}/api/hospitals`);
+      url.searchParams.append('prefecture', prefectureCode);
+      
+      const response = await fetch(url);
+      const result = await safeJSON(response);
+      
+      if (response.ok && result.ok && Array.isArray(result.hospitals)) {
+        // 新しいAPI形式: { hospitals: [{code: '01-02', name: '病院名'}, ...] }
+        // 古い形式に変換: { items: [{code: '01-02', hospital: '病院名'}, ...] }
+        return result.hospitals.map(h => ({
+          code: h.code,
+          hospital: h.name
+        }));
+      }
+    } else {
+      // prefixがない場合は古いAPIを使用
+      const url = new URL(`${API}/api/mdata/search`);
+      const response = await fetch(url);
+      const result = await safeJSON(response);
+      
+      if (response.ok && result.ok && Array.isArray(result.items)) {
+        return result.items;
+      }
     }
   } catch (error) {
     console.error('Search error:', error);

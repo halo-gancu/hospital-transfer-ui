@@ -10,6 +10,22 @@ def setup_users():
     """初期ユーザーを作成"""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
+
+     # ログイン履歴テーブルの作成
+    print("📋 ログイン履歴テーブルを作成中...\n")
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS login_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            username TEXT NOT NULL,
+            login_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            ip_address TEXT,
+            user_agent TEXT,
+            success BOOLEAN DEFAULT 1,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    ''')
+    print("✅ ログイン履歴テーブル作成完了\n")
     
     # 管理者1人
     admin_user = ('admin', 'Admin@2024', 'admin@cantera-kyoto.com', 'admin')
